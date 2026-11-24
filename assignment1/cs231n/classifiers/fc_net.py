@@ -42,7 +42,12 @@ class TwoLayerNet(object):
           initialization of the weights.
         - reg: Scalar giving L2 regularization strength.
         """
-        self.params = {}
+        self.params = {
+            'W1': np.random.normal(0.0, weight_scale, size=(input_dim, hidden_dim)),
+            'b1': np.zeros(hidden_dim),
+            'W2': np.random.normal(0.0, weight_scale, size=(hidden_dim, num_classes)),
+            'b2': np.zeros(num_classes)
+        }
         self.reg = reg
 
         ############################################################################
@@ -78,7 +83,9 @@ class TwoLayerNet(object):
         - grads: Dictionary with the same keys as self.params, mapping parameter
           names to gradients of the loss with respect to those parameters.
         """
-        scores = None
+        relu_out, relu_cache = affine_relu_forward(X, self.params["W1"], self.params["b1"])
+        affine_out, affine_cache = affine_forward(relu_out, self.params["W2"], self.params["b2"])
+        scores = affine_out
         ############################################################################
         # TODO: Implement the forward pass for the two-layer net, computing the    #
         # class scores for X and storing them in the scores variable.              #
@@ -103,7 +110,14 @@ class TwoLayerNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-
+        loss, dscore = softmax_loss(affine_out, y)
+        loss += 0.5 * self.reg * (np.sum(self.params["W2"] ** 2) + np.sum(self.params["W1"] ** 2))
+        dx2, dw2, db2 = affine_backward(dscore, affine_cache)
+        dx, dw, db = affine_relu_backward(dx2, relu_cache)
+        grads["W2"] = dw2 + self.reg * self.params["W2"]
+        grads["b2"] = db2
+        grads["W1"] = dw + self.reg * self.params["W1"]
+        grads["b1"] = db
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
